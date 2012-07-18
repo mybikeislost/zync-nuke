@@ -11,9 +11,9 @@ Future work:
     * split out zync API stuff into separate zync python module
 
 Usage as a menu item:
-    nuke.pluginAddPath( "./nuke_zync_submit" )
-    import zync_submit
-    menu.addCommand('ZYNC Render', 'zync_submit.submit_dialog()')
+    nuke.pluginAddPath( "./zync-nuke" )
+    import zync_nuke
+    menu.addCommand('ZYNC Render', 'zync_nuke.submit_dialog()')
 """
 
 import hashlib

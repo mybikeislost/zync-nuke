@@ -10,14 +10,14 @@ init.py should contain the following text:
 
 ```python
 import nuke
-nuke.pluginAddPath( "/path/to/nuke_zync_submit" )
-import zync_submit
+nuke.pluginAddPath( "/path/to/zync-nuke" )
+import zync_nuke
 menubar = nuke.menu( "Nuke" );
 menu = menubar.addMenu( "&Render" )
-menu.addCommand( 'ZYNC Render', 'zync_submit.submit_dialog()' )
+menu.addCommand( 'ZYNC Render', 'zync_nuke.submit_dialog()' )
 ```
 
 This will add an item to the "Render" menu in ZYNC that will allow you to launch ZYNC jobs.
 
-Now, open up nuke_zync_submit/zync_submit.py. Near the top you'll see a few lines tell you to REPLACE with the path to your zync-python directory. This is referring to the ZYNC Python API. As both Nuke and Maya use this API, it should be stored in a central location accessible by both softwares.
+Now, open up zync_nuke.py. Near the top you'll see a few lines tell you to REPLACE with the path to your zync-python directory. This is referring to the ZYNC Python API. As both Nuke and Maya use this API, it should be stored in a central location accessible by both softwares.
 
