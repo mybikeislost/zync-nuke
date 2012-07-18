@@ -407,9 +407,16 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
 
         self.only_running = nuke.Boolean_Knob('only_running',
                                               'Only Use Running Instances')
-
-        self.instance_type = nuke.Enumeration_Knob('instance_type', 'Type:',
-                                                   zync.INSTANCE_TYPES.values())
+        type_list = []
+        non_default = []
+        for inst_type in zync.INSTANCE_TYPES:
+            if inst_type == zync.DEFAULT_INSTANCE_TYPE:
+                type_list.append( '%s (%s)' % ( inst_type, zync.INSTANCE_TYPES[inst_type]["description"] ) )
+            else:
+                non_default.append( '%s (%s)' % ( inst_type, zync.INSTANCE_TYPES[inst_type]["description"] ) )
+        for label in non_default:
+            type_list.append( label ) 
+        self.instance_type = nuke.Enumeration_Knob( 'instance_type', 'Type:', type_list )
 
         first = nuke.root().knob('first_frame').value()
         last = nuke.root().knob('last_frame').value()
@@ -475,9 +482,9 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         params = dict()
         params['num_instances'] = self.num_instances.value()
 
-        for item in zync.INSTANCE_TYPES.items():
-            if self.instance_type.value() == item[1]:
-                params['instance_type'] = item[0]
+        for inst_type in zync.INSTANCE_TYPES:
+            if self.instance_type.value().startswith( inst_type ):
+                params['instance_type'] = zync.INSTANCE_TYPES[inst_type]["csp_label"]
 
         params['proj_name'] = self.project.value()
         params['frange'] = self.frange.value()
