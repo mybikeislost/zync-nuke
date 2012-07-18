@@ -33,9 +33,9 @@ __copyright__ = 'Copyright 2011, Atomic Fiction, Inc.'
 
 # REPLACE WITH PATH TO zync/ DIRECTORY
 if platform.system() in ( "Windows", "Microsoft" ):
-    nuke.pluginAddPath( "Z:/plugins/zync/" )
+    nuke.pluginAddPath( "Z:/plugins/zync-python/" )
 else:
-    nuke.pluginAddPath( "/Volumes/server/plugins/zync/" )
+    nuke.pluginAddPath( "/Volumes/server/plugins/zync-python/" )
 import zync
 SERVER_PATHS = zync.SERVER_PATHS
 
