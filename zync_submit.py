@@ -31,7 +31,7 @@ import urllib
 __author__ = 'Alex Schworer'
 __copyright__ = 'Copyright 2011, Atomic Fiction, Inc.'
 
-# REPLACE WITH PATH TO zync/ DIRECTORY
+# REPLACE WITH PATH TO zync-python DIRECTORY
 if platform.system() in ( "Windows", "Microsoft" ):
     nuke.pluginAddPath( "Z:/plugins/zync-python/" )
 else:

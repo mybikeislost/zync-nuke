@@ -19,6 +19,5 @@ menu.addCommand( 'ZYNC Render', 'zync_submit.submit_dialog()' )
 
 This will add an item to the "Render" menu in ZYNC that will allow you to launch ZYNC jobs.
 
-Now, open up nuke_zync_submit/zync_submit.py. Near the top you'll see a few lines tell you to REPLACE the values with your own. Edit those lines accordingly.
+Now, open up nuke_zync_submit/zync_submit.py. Near the top you'll see a few lines tell you to REPLACE with the path to your zync-python directory. This is referring to the ZYNC Python API. As both Nuke and Maya use this API, it should be stored in a central location accessible by both softwares.
 
-For the line that says "# REPLACE WITH PATH TO zync/ DIRECTORY", its talking about the "zync" folder included with these plugins. This folder contains the Python API used by both the Nuke and Maya plugins, and should be stored in a central place.
