@@ -1,10 +1,10 @@
 # ZYNC Plugin for Nuke
 
-## Installing the ZYNC Nuke Plugin
+## Installing
 
-Everything you need is included in this folder. You'll just need to point Nuke to this folder to load it on startup.
+Everything you need is included in this repository. You'll just need to point Nuke to this folder to load it on startup.
 
-You'll need to locate your .nuke folder, usually stored within your HOME folder. In there you'll need a file called menu.py - this file may already exist.
+You'll need to locate your .nuke folder, usually stored within your HOME folder. In there you'll need a file called menu.py. This file may already exist.
 
 init.py should contain the following text:
 
