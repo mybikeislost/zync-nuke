@@ -365,34 +365,8 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         self.update_write_dict()
 
         # CREATE KNOBS
-        #self.writeNode = nuke.Enumeration_Knob('write_nodes', 'Write Node:', self.writeListNames)
-        #self.writeNode.setValue('None')
 
-        selected_write_nodes = []
-        for node in nuke.selectedNodes():
-            if node.Class() == "Write":
-                selected_write_nodes.append( node.name() )
-
-        self.writeNodes = []
-        colNum = 1
-        for writeName in self.writeListNames:
-            knob = nuke.Boolean_Knob( writeName, writeName )
-            if len(selected_write_nodes) == 0:
-                knob.setValue(True)
-            elif writeName in selected_write_nodes:
-                knob.setValue(True)
-            else:
-                knob.setValue(False)
-            if colNum > 3:
-                knob.setFlag( nuke.STARTLINE )
-                colNum = 1
-            else:
-                colNum += 1
-            knob.setTooltip( self.writeDict[writeName].knob("file").value() )
-            self.writeNodes.append( knob )
-
-        self.project = nuke.Text_Knob('project', 'Show:')
-
+        self.project = nuke.String_Knob( 'project', 'ZYNC Project:' )
         # use the API's get_project_name() to decide what the project
         # of the current Nuke script is.
         proj_response = zync.get_project_name( nuke.root().name() )
@@ -401,12 +375,17 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             return
         self.project.setValue( proj_response["response"] )
 
-        self.num_instances = nuke.Int_Knob('num_instances',
-                                           'Number of Instances:')
+        self.upload_only = nuke.Boolean_Knob('upload_only', 'Upload Only')
+        self.upload_only.setFlag(nuke.STARTLINE)
+
+        self.priority = nuke.Int_Knob( 'priority', 'Job Priority:' )
+        self.priority.setDefaultValue((50,))
+
+        self.num_instances = nuke.Int_Knob('num_instances', 'Num. Instances:')
         self.num_instances.setDefaultValue((1,))
 
-        self.only_running = nuke.Boolean_Knob('only_running',
-                                              'Only Use Running Instances')
+        self.only_running = nuke.Boolean_Knob( 'only_running', 'Only Use Running Instances' )
+
         type_list = []
         non_default = []
         for inst_type in zync.INSTANCE_TYPES:
@@ -418,6 +397,12 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             type_list.append( label ) 
         self.instance_type = nuke.Enumeration_Knob( 'instance_type', 'Type:', type_list )
 
+        self.skip_check = nuke.Boolean_Knob('skip_check', 'Skip File Check')
+        self.skip_check.setFlag(nuke.STARTLINE)
+
+        self.notify_complete = nuke.Boolean_Knob('notify_complete', 'Notify When Complete')
+        self.notify_complete.setFlag(nuke.STARTLINE)
+
         first = nuke.root().knob('first_frame').value()
         last = nuke.root().knob('last_frame').value()
         frange = '%d-%d' % (first, last)
@@ -426,37 +411,51 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         self.fstep = nuke.Int_Knob('fstep', 'Frame Step:')
         self.fstep.setDefaultValue((1,))
 
+        selected_write_nodes = []
+        for node in nuke.selectedNodes():
+            if node.Class() == "Write":
+                selected_write_nodes.append( node.name() )
+        self.writeNodes = []
+        colNum = 1
+        for writeName in self.writeListNames:
+            knob = nuke.Boolean_Knob( writeName, writeName )
+            if len(selected_write_nodes) == 0:
+                knob.setValue(True)
+            elif writeName in selected_write_nodes:
+                knob.setValue(True)
+            else:
+                knob.setValue(False)
+            if colNum == 1:
+                knob.setFlag( nuke.STARTLINE )
+            if colNum > 3:
+                colNum = 1
+            else:
+                colNum += 1
+            knob.setTooltip( self.writeDict[writeName].knob("file").value() )
+            self.writeNodes.append( knob )
+
         self.chunk_size = nuke.Int_Knob('chunk_size', 'Chunk Size:')
         self.chunk_size.setDefaultValue((10,))
 
-        self.upload_only = nuke.Boolean_Knob('upload_only', 'Upload Only')
-        self.upload_only.setFlag(nuke.STARTLINE)
-
-        self.skip_check = nuke.Boolean_Knob('skip_check', 'Skip File Check')
-        self.skip_check.setFlag(nuke.STARTLINE)
-
-        self.notify_complete = nuke.Boolean_Knob('notify_complete', 'Notify When Complete')
-        self.notify_complete.setFlag(nuke.STARTLINE)
-
         # ADD KNOBS
-        #self.addKnob(self.writeNode)
-        for k in self.writeNodes:
-            self.addKnob( k )
         self.addKnob(self.project)
         self.addKnob(self.upload_only)
-        self.addKnob(self.skip_check)
-        self.addKnob(self.notify_complete)
+        self.addKnob(self.priority)
         self.addKnob(self.num_instances)
         self.addKnob(self.only_running)
         self.addKnob(self.instance_type)
+        self.addKnob(self.skip_check)
+        self.addKnob(self.notify_complete)
         self.addKnob(self.frange)
         self.addKnob(self.fstep)
+        for k in self.writeNodes:
+            self.addKnob( k )
         self.addKnob(self.chunk_size)
 
         # collect render-specific knobs for iterating on later
         self.render_knobs = (self.num_instances, self.instance_type,
                              self.frange, self.fstep, self.chunk_size,
-                             self.skip_check, self.only_running)
+                             self.skip_check, self.only_running, self.priority)
 
     def update_write_dict(self):
         """ updates self.writeDict """
@@ -469,11 +468,6 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         self.writeDict.update(wd)
         self.writeListNames = self.writeDict.keys()
         self.writeListNames.sort()
-        #self.writeListNames.append('All')
-
-        # TODO: needs to be adapted to check box system
-        #if hasattr(self, 'writeNode'):
-        #   self.writeNode.setValues(self.writeListNames)
 
     def get_params(self):
         """
@@ -491,6 +485,7 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         params['step'] = self.fstep.value()
         params['chunk_size'] = self.chunk_size.value()
         params['upload_only'] = int(self.upload_only.value())
+        params['priority'] = int(self.priority.value())
 
         # get the opposite of the only_running knob
         params['start_new_instances'] = self.only_running.value() ^ 1
@@ -622,13 +617,14 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             pw = self.password.value()
             if not user or not pw:
                 return None
-
             self.submit(user, pw)
         else:
             if knob is self.upload_only:
                 checked = self.upload_only.value()
                 for rk in self.render_knobs:
                     rk.setEnabled(not checked)
+                for k in self.writeNodes:
+                    k.setEnabled(not checked)
 
     def showModalDialog(self):
         """
