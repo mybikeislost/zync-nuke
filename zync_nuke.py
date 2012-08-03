@@ -218,8 +218,12 @@ def preflight(view=None):
     """
     Runs a preflight pass on the current nuke scene.
     Checks for:
-            * local paths (not at /Volumes/zero or Z:/) -- asks to continue?
+            * local file paths
     """
+    # TODO: redo this check to know about a locally-configured client app path -
+    # those files are local but zync still has access to them, so they should not
+    # trigger this message
+    '''
     reads = [x for x in nuke.allNodes() if x.Class() == 'Read']
     for node in reads:
         read_file = node.knob('file').evaluate()
@@ -232,6 +236,7 @@ def preflight(view=None):
             local_answer = nuke.ask( "Read node %s is local:\n%s\n\nDo you want to continue?" % ( node.name(), read_file ) )
             if not local_answer:
                 return False
+    '''
     return True
         
 class PasswordPrompt(nukescripts.panels.PythonPanel):
