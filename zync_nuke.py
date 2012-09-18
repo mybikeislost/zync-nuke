@@ -31,12 +31,20 @@ import urllib
 __author__ = 'Alex Schworer'
 __copyright__ = 'Copyright 2011, Atomic Fiction, Inc.'
 
-# REPLACE WITH PATH TO zync-python DIRECTORY
-if platform.system() in ( "Windows", "Microsoft" ):
-    nuke.pluginAddPath( "Z:/plugins/zync-python/" )
-else:
-    nuke.pluginAddPath( "/Volumes/server/plugins/zync-python/" )
+config_path = "%s/config_nuke.py" % ( os.path.dirname(__file__), )
+if not os.path.exists( config_path ):
+    raise Exception( "Could not locate config_nuke.py, please create." )
+from config_nuke import *
+
+required_config = [ "API_DIR" ]
+
+for key in required_config:
+    if not key in globals():
+        raise Exception( "config_nuke.py must define a value for %s." % ( key, ) )
+
+nuke.pluginAddPath( API_DIR )
 import zync
+
 SERVER_PATHS = zync.SERVER_PATHS
 
 def generate_script_path(extra_name=None):

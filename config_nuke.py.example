@@ -1,0 +1,9 @@
+#
+#   Detects user's operating system and sets path to zync-python folder
+#   accordingly.  
+#
+import platform
+if platform.system() in ( "Windows", "Microsoft" ):
+    API_DIR = "Z:/plugins/zync-python"
+else:
+    API_DIR = "/Volumes/server/plugins/zync-python"
