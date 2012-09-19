@@ -2,11 +2,17 @@
 
 ## Installing
 
-Everything you need is included in this repository. You'll just need to point Nuke to this folder to load it on startup.
+### Config File
+
+Contained in this folder you'll find a file called ```config_nuke.py.example```. Make a copy of this file in the same directory, and rename it ```config_nuke.py```.
+
+Edit ```config_nuke.py```. It defines only one config variable, ```API_DIR```, which is the full path to your zync-python directory. Set this path, save the file, and close it.
+
+### Set Up menu.py
 
 You'll need to locate your .nuke folder, usually stored within your HOME folder. In there you'll need a file called menu.py. This file may already exist.
 
-init.py should contain the following text:
+menu.py should contain the following text:
 
 ```python
 import nuke
@@ -14,10 +20,12 @@ nuke.pluginAddPath( "/path/to/zync-nuke" )
 import zync_nuke
 menubar = nuke.menu( "Nuke" );
 menu = menubar.addMenu( "&Render" )
-menu.addCommand( 'ZYNC Render', 'zync_nuke.submit_dialog()' )
+menu.addCommand( 'Render on ZYNC', 'zync_nuke.submit_dialog()' )
 ```
 
 This will add an item to the "Render" menu in ZYNC that will allow you to launch ZYNC jobs.
 
-Now, open up zync_nuke.py. Near the top you'll see a few lines tell you to REPLACE with the path to your zync-python directory. This is referring to the ZYNC Python API. As both Nuke and Maya use this API, it should be stored in a central location accessible by both softwares.
+### Done
+
+That's it! Restart Nuke to pull in the changes you made.
 
