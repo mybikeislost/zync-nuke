@@ -36,7 +36,7 @@ if not os.path.exists( config_path ):
     raise Exception( "Could not locate config_nuke.py, please create." )
 from config_nuke import *
 
-required_config = [ "API_DIR" ]
+required_config = [ "API_DIR", "API_KEY" ]
 
 for key in required_config:
     if not key in globals():
@@ -584,14 +584,8 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             # exec before render
             #nuke.callbacks.beforeRenders
 
-            completed_without_timeout = False
-            while not completed_without_timeout:
-                try:
-                    z = zync.Zync( user, pw, 'nuke' )
-                    z.job.submit( new_script, ','.join( selected_write_names ), self.get_params() )
-                    completed_without_timeout = True
-                except (socket.error, socket.timeout):
-                    completed_without_timeout = False
+            z = zync.Zync("nuke_plugin", API_KEY, username=user, password=pw)
+            z.submit_job("nuke", new_script, ','.join( selected_write_names ), self.get_params())
 
         except zync.ZyncAuthenticationError, e:
             nuke.zync_creds['user'] = None

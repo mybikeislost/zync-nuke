@@ -12,3 +12,8 @@ if platform.system() in ( "Windows", "Microsoft" ):
     API_DIR = "Z:/plugins/zync-python"
 else:
     API_DIR = "/Volumes/server/plugins/zync-python"
+
+#
+#   API_KEY - Check your My Account page to get your key.
+#
+API_KEY = "a88f0a3de24a58afc6295b6e567ab53d"
