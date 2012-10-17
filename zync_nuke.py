@@ -264,7 +264,10 @@ class PasswordPrompt(nukescripts.panels.PythonPanel):
         self.username = nuke.String_Knob('username', 'Username: ')
         if user_default != None:
             self.username.setValue( user_default )
-        self.password = nuke.String_Knob('password', 'Password: ')
+        try:
+            self.password = nuke.Password_Knob('password', 'Password: ')
+        except Exception:
+            self.password = nuke.String_Knob('password', 'Password: ')
         self.addKnob(self.username)
         self.addKnob(self.password)
 
@@ -368,6 +371,8 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         nukescripts.panels.PythonPanel.__init__(self, 'ZYNC Render',
                                                 'com.atomicfiction.zyncRender')
 
+        self.setMinimumSize( 400, 350 )
+
         if platform.system() in ( "Windows", "Microsoft" ):
             self.usernameDefault = os.environ["USERNAME"]
         else:
@@ -390,6 +395,9 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
 
         self.upload_only = nuke.Boolean_Knob('upload_only', 'Upload Only')
         self.upload_only.setFlag(nuke.STARTLINE)
+
+        self.parent_id = nuke.String_Knob( 'parent_id', 'Parent ID:' )
+        self.parent_id.setValue("")
 
         self.priority = nuke.Int_Knob( 'priority', 'Job Priority:' )
         self.priority.setDefaultValue((50,))
@@ -452,6 +460,7 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
 
         # ADD KNOBS
         self.addKnob(self.project)
+        self.addKnob(self.parent_id)
         self.addKnob(self.upload_only)
         self.addKnob(self.priority)
         self.addKnob(self.num_instances)
@@ -468,7 +477,8 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         # collect render-specific knobs for iterating on later
         self.render_knobs = (self.num_instances, self.instance_type,
                              self.frange, self.fstep, self.chunk_size,
-                             self.skip_check, self.only_running, self.priority)
+                             self.skip_check, self.only_running, self.priority,
+                             self.parent_id)
 
     def update_write_dict(self):
         """ updates self.writeDict """
@@ -499,6 +509,9 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         params['chunk_size'] = self.chunk_size.value()
         params['upload_only'] = int(self.upload_only.value())
         params['priority'] = int(self.priority.value())
+        parent = self.parent_id.value()
+        if parent != None and parent != "":
+            params['parent_id'] = int(self.parent_id.value())
 
         # get the opposite of the only_running knob
         params['start_new_instances'] = self.only_running.value() ^ 1
