@@ -376,7 +376,7 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         if platform.system() in ( "Windows", "Microsoft" ):
             self.usernameDefault = os.environ["USERNAME"]
         else:
-            self.usernameDefault = os.getlogin()
+            self.usernameDefault = os.environ["USER"]
 
         #GET WRITE NODES FROM FILE
         self.writeDict = dict()
@@ -402,10 +402,10 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         self.priority = nuke.Int_Knob( 'priority', 'Job Priority:' )
         self.priority.setDefaultValue((50,))
 
-        self.num_instances = nuke.Int_Knob('num_instances', 'Num. Instances:')
-        self.num_instances.setDefaultValue((1,))
+        self.num_slots = nuke.Int_Knob('num_slots', 'Num. Slots:')
+        self.num_slots.setDefaultValue((1,))
 
-        self.only_running = nuke.Boolean_Knob( 'only_running', 'Only Use Running Instances' )
+        self.only_running = nuke.Boolean_Knob( 'only_running', 'Only Use Running Slots' )
 
         type_list = []
         non_default = []
@@ -463,7 +463,7 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         self.addKnob(self.parent_id)
         self.addKnob(self.upload_only)
         self.addKnob(self.priority)
-        self.addKnob(self.num_instances)
+        self.addKnob(self.num_slots)
         self.addKnob(self.only_running)
         self.addKnob(self.instance_type)
         self.addKnob(self.skip_check)
@@ -475,7 +475,7 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         self.addKnob(self.chunk_size)
 
         # collect render-specific knobs for iterating on later
-        self.render_knobs = (self.num_instances, self.instance_type,
+        self.render_knobs = (self.num_slots, self.instance_type,
                              self.frange, self.fstep, self.chunk_size,
                              self.skip_check, self.only_running, self.priority,
                              self.parent_id)
@@ -497,7 +497,7 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         Returns a dictionary of the job parameters from the submit render gui.
         """
         params = dict()
-        params['num_instances'] = self.num_instances.value()
+        params['num_instances'] = self.num_slots.value()
 
         for inst_type in zync.INSTANCE_TYPES:
             if self.instance_type.value().startswith( inst_type ):
@@ -514,7 +514,7 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             params['parent_id'] = int(self.parent_id.value())
 
         # get the opposite of the only_running knob
-        params['start_new_instances'] = self.only_running.value() ^ 1
+        params['start_new_slots'] = self.only_running.value() ^ 1
 
         params['skip_check'] = self.skip_check.value()
         params['notify_complete'] = self.notify_complete.value()
