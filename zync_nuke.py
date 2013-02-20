@@ -31,21 +31,26 @@ import urllib
 __author__ = 'Alex Schworer'
 __copyright__ = 'Copyright 2011, Atomic Fiction, Inc.'
 
-config_path = "%s/config_nuke.py" % ( os.path.dirname(__file__), )
-if not os.path.exists( config_path ):
-    raise Exception( "Could not locate config_nuke.py, please create." )
+config_path = '%s/config_nuke.py' % (os.path.dirname(__file__),)
+if not os.path.exists(config_path):
+    raise Exception('Could not locate config_nuke.py, please create.')
 from config_nuke import *
 
-required_config = [ "API_DIR", "API_KEY" ]
+required_config = ['API_DIR', 'API_KEY']
 
 for key in required_config:
     if not key in globals():
-        raise Exception( "config_nuke.py must define a value for %s." % ( key, ) )
+        raise Exception('config_nuke.py must define a value for %s.' % (key,))
 
-nuke.pluginAddPath( API_DIR )
+nuke.pluginAddPath(API_DIR)
 import zync
 
-SERVER_PATHS = zync.SERVER_PATHS
+# Try to connect to ZYNC. If we can't that's fine for now, we'll try
+# again later when the user tries to launch a job.
+try:
+    ZYNC = zync.Zync('nuke_plugin', API_KEY)
+except:
+    ZYNC = None
 
 def generate_script_path(extra_name=None):
     """
@@ -236,7 +241,7 @@ def preflight(view=None):
     for node in reads:
         read_file = node.knob('file').evaluate()
         server_path_found = False
-        for path in SERVER_PATHS:
+        for path in ZYNC.SERVER_PATHS:
             if read_file.startswith( path ):
                 server_path_found = True
                 break
@@ -373,10 +378,10 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
 
         self.setMinimumSize( 400, 350 )
 
-        if platform.system() in ( "Windows", "Microsoft" ):
-            self.usernameDefault = os.environ["USERNAME"]
+        if platform.system() in ('Windows', 'Microsoft'):
+            self.usernameDefault = os.environ['USERNAME']
         else:
-            self.usernameDefault = os.environ["USER"]
+            self.usernameDefault = os.environ['USER']
 
         #GET WRITE NODES FROM FILE
         self.writeDict = dict()
@@ -384,36 +389,36 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
 
         # CREATE KNOBS
 
-        self.project = nuke.String_Knob( 'project', 'ZYNC Project:' )
+        self.project = nuke.String_Knob('project', 'ZYNC Project:')
         # use the API's get_project_name() to decide what the project
         # of the current Nuke script is.
-        proj_response = zync.get_project_name( nuke.root().name() )
-        if proj_response["code"] != 0:
-            nuke.message( proj_response["response"] )
+        proj_response = ZYNC.get_project_name(nuke.root().name())
+        if proj_response['code'] != 0:
+            nuke.message(proj_response['response'])
             return
-        self.project.setValue( proj_response["response"] )
+        self.project.setValue(proj_response['response'])
 
         self.upload_only = nuke.Boolean_Knob('upload_only', 'Upload Only')
         self.upload_only.setFlag(nuke.STARTLINE)
 
-        self.parent_id = nuke.String_Knob( 'parent_id', 'Parent ID:' )
+        self.parent_id = nuke.String_Knob('parent_id', 'Parent ID:')
         self.parent_id.setValue("")
 
-        self.priority = nuke.Int_Knob( 'priority', 'Job Priority:' )
+        self.priority = nuke.Int_Knob('priority', 'Job Priority:')
         self.priority.setDefaultValue((50,))
 
         self.num_slots = nuke.Int_Knob('num_slots', 'Num. Slots:')
         self.num_slots.setDefaultValue((1,))
 
-        self.only_running = nuke.Boolean_Knob( 'only_running', 'Only Use Running Slots' )
+        self.only_running = nuke.Boolean_Knob('only_running', 'Only Use Running Slots')
 
         type_list = []
         non_default = []
-        for inst_type in zync.INSTANCE_TYPES:
+        for inst_type in ZYNC.INSTANCE_TYPES:
             if inst_type == zync.DEFAULT_INSTANCE_TYPE:
-                type_list.append( '%s (%s)' % ( inst_type, zync.INSTANCE_TYPES[inst_type]["description"] ) )
+                type_list.append( '%s (%s)' % ( inst_type, ZYNC.INSTANCE_TYPES[inst_type]["description"] ) )
             else:
-                non_default.append( '%s (%s)' % ( inst_type, zync.INSTANCE_TYPES[inst_type]["description"] ) )
+                non_default.append( '%s (%s)' % ( inst_type, ZYNC.INSTANCE_TYPES[inst_type]["description"] ) )
         for label in non_default:
             type_list.append( label ) 
         self.instance_type = nuke.Enumeration_Knob( 'instance_type', 'Type:', type_list )
@@ -499,9 +504,9 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         params = dict()
         params['num_instances'] = self.num_slots.value()
 
-        for inst_type in zync.INSTANCE_TYPES:
+        for inst_type in ZYNC.INSTANCE_TYPES:
             if self.instance_type.value().startswith( inst_type ):
-                params['instance_type'] = zync.INSTANCE_TYPES[inst_type]["csp_label"]
+                params['instance_type'] = ZYNC.INSTANCE_TYPES[inst_type]["csp_label"]
 
         params['proj_name'] = self.project.value()
         params['frange'] = self.frange.value()
@@ -597,15 +602,16 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             # exec before render
             #nuke.callbacks.beforeRenders
 
-            z = zync.Zync("nuke_plugin", API_KEY, username=user, password=pw)
-            z.submit_job("nuke", new_script, ','.join( selected_write_names ), self.get_params())
+            #z = zync.Zync("nuke_plugin", API_KEY, username=user, password=pw)
+            ZYNC.login( username=user, password=pw )
+            ZYNC.submit_job('nuke', new_script, ','.join( selected_write_names ), self.get_params())
 
         except zync.ZyncAuthenticationError, e:
             nuke.zync_creds['user'] = None
             nuke.zync_creds['pw'] = None
             raise e
 
-        nuke.message( "Job submitted to ZYNC." )
+        nuke.message('Job submitted to ZYNC.')
 
     def addToPane(self):
         """
@@ -655,4 +661,11 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             self.submit()
 
 def submit_dialog():
+    global ZYNC
+    if ZYNC == None:
+        try:
+            ZYNC = zync.Zync('nuke_plugin', API_KEY)
+        except Exception as e:
+            nuke.message('Couldn\'t connect to ZYNC. Are you connected to the internet?')
+            return
     ZyncRenderPanel().showModalDialog()
