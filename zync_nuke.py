@@ -574,26 +574,22 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         else:
             viewer_input, viewed_node = None, None
 
-        if nuke.NUKE_VERSION_MAJOR < 7:
-            new_script = generate_script_path()
-            with WriteChanges(new_script):
-                # The WriteChanges context manager allows us to save the
-                # changes to the current session to the given script, leaving
-                # the current session unchanged once the context manager is
-                # exited.
-                preflight_result = preflight()
-                select_deps( selected_write_nodes )
+        new_script = generate_script_path()
+        with WriteChanges(new_script):
+            # The WriteChanges context manager allows us to save the
+            # changes to the current session to the given script, leaving
+            # the current session unchanged once the context manager is
+            # exited.
+            preflight_result = preflight()
 
+            if nuke.NUKE_VERSION_MAJOR < 7:
+                select_deps( selected_write_nodes )
                 for node in nuke.allNodes():
                     if node.isSelected():
                         node.setSelected(False)
                     else:
                         node.setSelected(True)
                 nuke.nodeDelete()
-
-        else:
-            new_script = nuke.root().knob('name').getValue()
-            preflight_result = preflight()
             
         if not preflight_result:
             return
