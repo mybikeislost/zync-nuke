@@ -185,21 +185,6 @@ def clear_view(node):
     if 'views' in node.knobs():
         node.knob('views').setValue('left')
 
-def is_fidget_node(node):
-    """
-    Checks if the read node is pointing to a fidget-backed asset
-    """
-    return '_ASSETS' in node.knob('file').evaluate()
-
-def is_local(node, prefix):
-    """
-    Checks if the given read node is pointing to somewhere other than the
-    given prefix. Useful for checking if a read node is not pointing to
-    your network path.
-    """
-    path = node.knob('file').evaluate()
-    return prefix not in path
-
 def is_stereo(node):
     """
     If the node is stereo (i.e. has %v or %V in the path)
@@ -229,27 +214,9 @@ def stereo_script():
 
 def preflight(view=None):
     """
-    Runs a preflight pass on the current nuke scene.
-    Checks for:
-            * local file paths
+    Runs a preflight pass on the current nuke scene. Modify as needed.
+    Returning True = success, False = failure
     """
-    # TODO: redo this check to know about a locally-configured client app path -
-    # those files are local but zync still has access to them, so they should not
-    # trigger this message
-    '''
-    reads = [x for x in nuke.allNodes() if x.Class() == 'Read']
-    for node in reads:
-        read_file = node.knob('file').evaluate()
-        server_path_found = False
-        for path in ZYNC.SERVER_PATHS:
-            if read_file.startswith( path ):
-                server_path_found = True
-                break
-        if not server_path_found:
-            local_answer = nuke.ask( "Read node %s is local:\n%s\n\nDo you want to continue?" % ( node.name(), read_file ) )
-            if not local_answer:
-                return False
-    '''
     return True
         
 class PasswordPrompt(nukescripts.panels.PythonPanel):
@@ -603,7 +570,6 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             # exec before render
             #nuke.callbacks.beforeRenders
 
-            #z = zync.Zync("nuke_plugin", API_KEY, username=user, password=pw)
             ZYNC.login( username=user, password=pw )
             ZYNC.submit_job('nuke', new_script, ','.join( selected_write_names ), self.get_params())
 
