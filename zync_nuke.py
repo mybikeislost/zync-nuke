@@ -343,7 +343,6 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         nukescripts.panels.PythonPanel.__init__(self, 'ZYNC Render',
                                                 'com.atomicfiction.zyncRender')
 
-        self.setMinimumSize( 400, 350 )
 
         if platform.system() in ('Windows', 'Microsoft'):
             self.usernameDefault = os.environ['USERNAME']
@@ -370,6 +369,23 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
 
         self.parent_id = nuke.String_Knob('parent_id', 'Parent ID:')
         self.parent_id.setValue("")
+
+        # create shotgun controls - they'll only be added if shotgun integration
+        # is enabled.
+        self.sg_create_version = nuke.Boolean_Knob('sg_create_version', 'Create Shotgun Version')
+        self.sg_create_version.setFlag(nuke.STARTLINE)
+        self.sg_create_version.setValue(False)
+        self.sg_user = nuke.String_Knob('sg_user', 'Shotgun User:')
+        self.sg_user.setFlag(nuke.STARTLINE)
+        self.sg_project = nuke.String_Knob('sg_project', 'Shotgun Project:')
+        self.sg_project.setFlag(nuke.STARTLINE)
+        self.sg_shot = nuke.String_Knob('sg_shot', 'Shotgun Shot:')
+        self.sg_shot.setFlag(nuke.STARTLINE)
+        self.sg_version_code = nuke.String_Knob('sg_version_code', 'Version Code:')
+        self.sg_version_code.setFlag(nuke.STARTLINE)
+        script_base, ext = os.path.splitext(os.path.basename(nuke.root().knob('name').getValue()))
+        self.sg_version_code.setValue( script_base )
+        self.hideSGControls()
 
         self.priority = nuke.Int_Knob('priority', 'Job Priority:')
         self.priority.setDefaultValue((50,))
@@ -433,6 +449,12 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         # ADD KNOBS
         self.addKnob(self.project)
         self.addKnob(self.parent_id)
+        if "shotgun" in ZYNC.FEATURES and ZYNC.FEATURES["shotgun"] == 1: 
+            self.addKnob(self.sg_create_version)
+            self.addKnob(self.sg_user)
+            self.addKnob(self.sg_project)
+            self.addKnob(self.sg_shot)
+            self.addKnob(self.sg_version_code)
         self.addKnob(self.upload_only)
         self.addKnob(self.priority)
         self.addKnob(self.num_slots)
@@ -451,6 +473,12 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
                              self.frange, self.fstep, self.chunk_size,
                              self.skip_check, self.only_running, self.priority,
                              self.parent_id)
+
+        if "shotgun" in ZYNC.FEATURES and ZYNC.FEATURES["shotgun"] == 1: 
+            height = 450
+        else:
+            height = 350
+        self.setMinimumSize( 400, height )
 
     def update_write_dict(self):
         """ updates self.writeDict """
@@ -490,6 +518,12 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
 
         params['skip_check'] = self.skip_check.value()
         params['notify_complete'] = self.notify_complete.value()
+
+        if "shotgun" in ZYNC.FEATURES and ZYNC.FEATURES["shotgun"] == 1 and self.sg_create_version.value():
+            params['sg_user'] = self.sg_user.value()
+            params['sg_project'] = self.sg_project.value()
+            params['sg_shot'] = self.sg_shot.value()
+            params['sg_version_code'] = self.sg_version_code.value()
 
         return params
 
@@ -566,10 +600,8 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             nuke.connectViewer(viewer_input, viewed_node)
 
         try:
-
             # exec before render
             #nuke.callbacks.beforeRenders
-
             ZYNC.login( username=user, password=pw )
             ZYNC.submit_job('nuke', new_script, ','.join( selected_write_names ), self.get_params())
 
@@ -611,13 +643,18 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             if not user or not pw:
                 return None
             self.submit(user, pw)
-        else:
-            if knob is self.upload_only:
-                checked = self.upload_only.value()
-                for rk in self.render_knobs:
-                    rk.setEnabled(not checked)
-                for k in self.writeNodes:
-                    k.setEnabled(not checked)
+        elif knob is self.upload_only:
+            checked = self.upload_only.value()
+            for rk in self.render_knobs:
+                rk.setEnabled(not checked)
+            for k in self.writeNodes:
+                k.setEnabled(not checked)
+        elif knob is self.sg_create_version:
+            checked = self.sg_create_version.value()
+            if checked:
+                self.showSGControls()
+            else:
+                self.hideSGControls()
 
     def showModalDialog(self):
         """
@@ -626,6 +663,18 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         result = nukescripts.panels.PythonPanel.showModalDialog(self)
         if result:
             self.submit()
+
+    def hideSGControls(self):
+        self.sg_user.setEnabled(False)
+        self.sg_project.setEnabled(False)
+        self.sg_shot.setEnabled(False)
+        self.sg_version_code.setEnabled(False)
+    def showSGControls(self):
+        self.sg_user.setEnabled(True)
+        self.sg_project.setEnabled(True)
+        self.sg_shot.setEnabled(True)
+        self.sg_version_code.setEnabled(True)
+    
 
 def submit_dialog():
     global ZYNC
