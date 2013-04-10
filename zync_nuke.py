@@ -125,11 +125,13 @@ def freeze_stereo_node(node, view=None):
 
 def freeze_node(node, view=None):
     """
-    If the read node has an expression, evaluate it so that the zync parser
-    works. Also accounts for and retains frame number expressions.
+    If the node has an expression, evaluate it so that the ZYNC can
+    parse it. Also accounts for and retains frame number expressions.
     Should be idempotent.
     """
     file_knob = node.knob('file')
+    if file_knob == None:
+        return
     knob_value = file_knob.value()
 
     # if the file param has an open bracket, let's assume that it's an
@@ -583,7 +585,15 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             # exited.
             preflight_result = preflight()
 
+            #
+            #   Nuke 7 broke its own undo() functionality, so this will only
+            #   run on Nuke 6 and earlier.
+            #
             if nuke.NUKE_VERSION_MAJOR < 7:
+                #
+                #   Remove all nodes that aren't connected to the Write
+                #   nodes being rendered.
+                #
                 select_deps( selected_write_nodes )
                 for node in nuke.allNodes():
                     if node.isSelected():
@@ -591,6 +601,11 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
                     else:
                         node.setSelected(True)
                 nuke.nodeDelete()
+                #
+                #   Freeze expressions on all nodes.
+                #
+                for node in nuke.allNodes():
+                    freeze_node( node )
             
         if not preflight_result:
             return
