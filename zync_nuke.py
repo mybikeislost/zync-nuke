@@ -614,16 +614,20 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         if viewer_input != None and viewed_node != None:
             nuke.connectViewer(viewer_input, viewed_node)
 
-        try:
-            # exec before render
-            #nuke.callbacks.beforeRenders
-            ZYNC.login( username=user, password=pw )
-            ZYNC.submit_job('nuke', new_script, ','.join( selected_write_names ), self.get_params())
+        # exec before render
+        #nuke.callbacks.beforeRenders
 
-        except zync.ZyncAuthenticationError, e:
+        try:
+            ZYNC.login( username=user, password=pw )
+        except zync.ZyncAuthenticationError as e:
             nuke.zync_creds['user'] = None
             nuke.zync_creds['pw'] = None
-            raise e
+            raise Exception('ZYNC Login Failed:\n\n%s' % (str(e),))
+
+        try:
+            ZYNC.submit_job('nuke', new_script, ','.join( selected_write_names ), self.get_params())
+        except zync.ZyncPreflightError as e:
+            raise Exception('Preflight Check Failed:\n\n%s' % (str(e),))
 
         nuke.message('Job submitted to ZYNC.')
 
