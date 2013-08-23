@@ -356,15 +356,14 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         self.update_write_dict()
 
         # CREATE KNOBS
-
-        self.project = nuke.String_Knob('project', 'ZYNC Project:')
-        # use the API's get_project_name() to decide what the project
-        # of the current Nuke script is.
-        proj_response = ZYNC.get_project_name(nuke.root().name())
+        proj_response = ZYNC.get_project_list()
         if proj_response['code'] != 0:
             nuke.message(proj_response['response'])
             return
-        self.project.setValue(proj_response['response'])
+        self.existing_project = nuke.Enumeration_Knob('existing_project', 'Existing Project:', [' ']+proj_response['response'])
+
+        self.new_project = nuke.String_Knob('project', ' New Project:')
+        self.new_project.clearFlag(nuke.STARTLINE)
 
         self.upload_only = nuke.Boolean_Knob('upload_only', 'Upload Only')
         self.upload_only.setFlag(nuke.STARTLINE)
@@ -449,7 +448,8 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
         self.chunk_size.setDefaultValue((10,))
 
         # ADD KNOBS
-        self.addKnob(self.project)
+        self.addKnob(self.existing_project)
+        self.addKnob(self.new_project)
         self.addKnob(self.parent_id)
         if "shotgun" in ZYNC.FEATURES and ZYNC.FEATURES["shotgun"] == 1: 
             self.addKnob(self.sg_create_version)
@@ -505,7 +505,12 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             if self.instance_type.value().startswith( inst_type ):
                 params['instance_type'] = ZYNC.INSTANCE_TYPES[inst_type]["csp_label"]
 
-        params['proj_name'] = self.project.value()
+        # these fields can't both be blank, we check in submit() before
+        # reaching this point
+        params['proj_name'] = self.existing_project.value().strip()
+        if params['proj_name'] == '':
+            params['proj_name'] = self.new_project.value().strip()
+
         params['frange'] = self.frange.value()
         params['step'] = self.fstep.value()
         params['chunk_size'] = self.chunk_size.value()
@@ -536,6 +541,10 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
 
         TODO: factor the bulk of this out of the ZyncRenderPanel object
         """
+
+        if self.existing_project.value().strip() == '' and self.new_project.value().strip() == '':
+            nuke.message('Project name cannot be blank. Please either choose an existing project from the dropdown or enter the desired project name in the New Project field.')
+            return
 
         if self.skip_check.value():
             skip_answer = nuke.ask( "You've asked ZYNC to skip the file check for this job. If you've added new files to your script this job WILL error. Your nuke script will still be uploaded. Are you sure you want to continue?" )
@@ -625,7 +634,10 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             raise Exception('ZYNC Login Failed:\n\n%s' % (str(e),))
 
         try:
-            ZYNC.submit_job('nuke', new_script, ','.join( selected_write_names ), self.get_params())
+            render_params = self.get_params()
+            if render_params == None:
+                return
+            ZYNC.submit_job('nuke', new_script, ','.join( selected_write_names ), render_params)
         except zync.ZyncPreflightError as e:
             raise Exception('Preflight Check Failed:\n\n%s' % (str(e),))
 
