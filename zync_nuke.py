@@ -595,10 +595,10 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
             preflight_result = preflight()
 
             #
-            #   Nuke 7 broke its own undo() functionality, so this will only
-            #   run on Nuke 6 and earlier.
+            #   Nuke 7.0v1 through 7.0v8 broke its own undo() functionality, so this will only
+            #   run on versions other than those.
             #
-            if nuke.NUKE_VERSION_MAJOR < 7:
+            if nuke.NUKE_VERSION_MAJOR != 7 or nuke.NUKE_VERSION_MINOR > 0 or nuke.NUKE_VERSION_RELEASE > 8:
                 #
                 #   Remove all nodes that aren't connected to the Write
                 #   nodes being rendered.
