@@ -129,29 +129,44 @@ def freeze_node(node, view=None):
     parse it. Also accounts for and retains frame number expressions.
     Should be idempotent.
     """
-    file_knob = node.knob('file')
-    if file_knob == None:
-        return
-    knob_value = file_knob.value()
+    knob_names = ['file', 'font']
+    for knob_name in knob_names:
+        file_knob = node.knob(knob_name)
+        if file_knob == None:
+            continue
+        knob_value = file_knob.value()
 
-    # if the file param has an open bracket, let's assume that it's an
-    # expression:
-    if '[' in knob_value:
-        if node.Class() == 'Write':
-            file_knob.setValue(nuke.filename(node))
-        else:
-            frozen_path = file_knob.evaluate()
-            frozen_dir = os.path.split(frozen_path)[0]
-            file_expr = os.path.split(knob_value)[-1]
+        # if the file param has an open bracket, let's assume that it's an
+        # expression:
+        if '[' in knob_value:
+            if node.Class() == 'Write':
+                file_knob.setValue(nuke.filename(node))
+            else:
+                frozen_path = file_knob.evaluate()
+                frozen_dir = os.path.split(frozen_path)[0]
+                file_expr = os.path.split(knob_value)[-1]
 
-            # sets the read node to be
-            file_knob.setValue(os.path.join(frozen_dir, file_expr))
+                # sets the read node to be
+                file_knob.setValue(os.path.join(frozen_dir, file_expr))
 
-    if view:
-        knob_value = knob_value.replace('%v', view.lower())
-        knob_value = knob_value.replace('%V', view.upper())
+        if view:
+            knob_value = knob_value.replace('%v', view.lower())
+            knob_value = knob_value.replace('%V', view.upper())
 
-        node.knob('file').setValue(knob_value)
+            node.knob(knob_name).setValue(knob_value)
+
+def gizmos_to_groups(nodes):
+    """
+    If the node is a Gizmo, use makeGroup() to turn it into a Group.
+    """
+    # deselect all nodes
+    for node in nuke.allNodes(recurseGroups=True):
+        node.setSelected(False)
+    for node in nodes:
+        if hasattr(node, 'makeGroup') and callable(getattr(node, 'makeGroup')):
+            node.setSelected(True)
+            node.makeGroup()
+            nuke.delete(node)
 
 def clear_nodes_by_name(names):
     """
@@ -603,7 +618,7 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
                 #   Remove all nodes that aren't connected to the Write
                 #   nodes being rendered.
                 #
-                select_deps( selected_write_nodes )
+                select_deps(selected_write_nodes)
                 for node in nuke.allNodes():
                     if node.isSelected():
                         node.setSelected(False)
@@ -613,8 +628,8 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
                 #
                 #   Freeze expressions on all nodes.
                 #
-                for node in nuke.allNodes():
-                    freeze_node( node )
+                for node in nuke.allNodes(recurseGroups=True):
+                    freeze_node(node)
             
         if not preflight_result:
             return
