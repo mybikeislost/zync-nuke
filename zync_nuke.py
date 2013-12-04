@@ -159,8 +159,13 @@ def gizmos_to_groups(nodes):
     """
     If the node is a Gizmo, use makeGroup() to turn it into a Group.
     """
-    # deselect all nodes
-    for node in nuke.allNodes(recurseGroups=True):
+    # deselect all nodes. catch errors for nuke versons that don't
+    # support the recurseGroups option.
+    try:
+        node_list = nuke.allNodes(recurseGroups=True)
+    except:
+        node_list = nuke.allNodes()
+    for node in node_list: 
         node.setSelected(False)
     for node in nodes:
         if hasattr(node, 'makeGroup') and callable(getattr(node, 'makeGroup')):
@@ -626,9 +631,14 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
                         node.setSelected(True)
                 nuke.nodeDelete()
                 #
-                #   Freeze expressions on all nodes.
+                #   Freeze expressions on all nodes. Catch errors for Nuke
+                #   versions that don't support the recurseGroups option.
                 #
-                for node in nuke.allNodes(recurseGroups=True):
+                try:
+                    node_list = nuke.allNodes(recurseGroups=True)
+                except:
+                    node_list = nuke.allNodes()
+                for node in node_list: 
                     freeze_node(node)
             
         if not preflight_result:
