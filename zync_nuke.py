@@ -523,7 +523,7 @@ class ZyncRenderPanel(nukescripts.panels.PythonPanel):
 
         for inst_type in ZYNC.INSTANCE_TYPES:
             if self.instance_type.value().startswith( inst_type ):
-                params['instance_type'] = ZYNC.INSTANCE_TYPES[inst_type]["csp_label"]
+                params['instance_type'] = inst_type
 
         # these fields can't both be blank, we check in submit() before
         # reaching this point
